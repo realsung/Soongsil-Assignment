@@ -127,9 +127,9 @@ class TableImpl implements Table{
 					columnList.get(idx).addData(col.getMean() + "");
 					columnList.get(idx).addData(col.getStd() + "");
 					columnList.get(idx).addData(col.getNumericMin() + "");
-					columnList.get(idx).addData("25%");
+					columnList.get(idx).addData(col.getQ1() + "");
 					columnList.get(idx).addData(col.getMedian() + "");
-					columnList.get(idx).addData("75%");
+					columnList.get(idx).addData(col.getQ3() + "");
 					columnList.get(idx).addData(col.getNumericMax() + "");
 					idx++;
 				}

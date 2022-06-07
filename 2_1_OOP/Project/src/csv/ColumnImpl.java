@@ -82,6 +82,8 @@ class ColumnImpl implements Column{
 		}
 		double fraction = index-lower;
 		double result=l.get(lower) + fraction*(l.get(lower+1)-l.get(lower));
+//		result = result * 1000000 / 1000000.0;
+		result = Math.floor(result * 1000000) / 1000000.0;
 		return result;
 	}
     
@@ -317,13 +319,43 @@ class ColumnImpl implements Column{
 		}
 		return flag;
 	}
-
+	
 	@Override
 	public boolean standardize() {
 		if (!isNumericColumn()) return false;
 		boolean flag = false;
-		double std = getStd();
-		double mean = getMean();
+		double std;
+		double mean;
+		int cnt = 0;
+		double sum = 0;
+		double sum2 = 0;
+//		double std = getStd();
+//		double mean = getMean();
+		
+		
+		for(String str: columnList) {
+			if(str.equals("null")) continue;
+			try {
+				sum += Double.parseDouble(str);
+				cnt++;
+			}catch(NumberFormatException e) {
+			
+			}
+		}
+		
+		mean = sum / cnt;
+		
+		for (String str : columnList) {
+			if(str.equals("null")) continue;
+			try {
+				sum2 += Math.pow(Double.parseDouble(str) - mean, 2);
+			} catch (NumberFormatException e) {
+
+			}
+		}
+		std = Math.sqrt(sum2 / (getNumericCount() - 1));
+		
+		
 		double tmp;
 		System.out.println(this.header + " : " + getDtype());
 		if(!getDtype().equals("String")){
