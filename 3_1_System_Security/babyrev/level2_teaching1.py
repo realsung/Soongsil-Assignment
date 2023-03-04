@@ -8,7 +8,7 @@ s = ssh(host="ssu-csec.pwn.college", user="ssu-csec", port=22, password="djaxod1
 
 argv = [filename]
 for i in range(310):
-    argv.append('a')
+    argv.append('nvn')
 
 p = s.process(argv)
 
