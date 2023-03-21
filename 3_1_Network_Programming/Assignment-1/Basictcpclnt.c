@@ -2,6 +2,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #define PORT 9001
 
 int main()		
@@ -11,9 +13,7 @@ int main()
 	int clntAddrLen, readLen;	
 	char wBuff[] = "How old are you?";	
 	char rBuff[BUFSIZ];	
-		
-		
-		
+
 	clntSd = socket(PF_INET, SOCK_STREAM, 0);	
 	if(clntSd == -1)	
 	{	
@@ -31,12 +31,10 @@ int main()
 		return -1;
 	}
 	// ssize_t send(int sockfd, const void *buf, size_t len, int flags);
-	ssize_t send_status = send(clntSd, wBuff, sizeof(wBuff), 0);
-	printf("[*] send_status : %ld", send_status);
-	write(clntSd, wBuff, sizeof(wBuff));	
+	send(clntSd, wBuff, strlen(wBuff), 0); // write 대신 send 사용
 	printf("Client: %s\n",wBuff);	
 		
-	readLen = read(clntSd, rBuff,sizeof(rBuff)-1);	
+	readLen = read(clntSd, rBuff, sizeof(rBuff)-1);	
 	if(readLen == -1)	
 	{	
 		printf("Read Error");

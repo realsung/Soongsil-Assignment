@@ -43,14 +43,13 @@ int main()
 		return -1;
 	}
 	
-	int recv_status = recv(clntSd, rBuff, sizeof(rBuff)-1, MSG_DONTWAIT);
-	printf("[*] recv_status : %d", recv_status);
-	if(recv_status == -1) 
-	{
+	// recv(int sockfd, const void *buf, size_t len, int flags)
+	ssize_t recv_res = recv(clntSd, rBuff, sizeof(rBuff)-1, 0);
+	if(recv_res == -1){
 		printf("Recv Error");
 		return -1;
 	}
-	rBuff[sizeof(rBuff)-1] = '\0';
+	rBuff[recv_res] = '\0';
 	printf("Client: %s \n", rBuff);
 	
 	

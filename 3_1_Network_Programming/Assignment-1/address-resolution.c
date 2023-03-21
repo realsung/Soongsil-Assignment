@@ -44,6 +44,8 @@ int printAddr(struct sockaddr_in *myAddr)
 	port = ntohs(myAddr->sin_port);
 	// inet_ntop(AF_INET,&(((struct sockaddr_in *)myAddr)->sin_addr),
 		// txt,sizeof(struct sockaddr_in));
+	// myAddr->sin_addr.s_addr에 u_long s_addr로 저장돼 있으므로, 이를 출력하기 위해 byte order를 진행함
+	// 비트연산을 통해서 메모리에 저장된 값을 srpintf로 txt에 저장
 	sprintf(txt, "%u.%u.%u.%u",
 		(myAddr->sin_addr.s_addr&0x000000ff),
 		(myAddr->sin_addr.s_addr&0x0000ff00) >> 8,

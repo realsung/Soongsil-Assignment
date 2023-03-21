@@ -31,9 +31,7 @@ int main()
 		printf("Connect Error");
 		close(clntSd);
 		return -1;
-	}	
-		
-		
+	}
 		
 	write(clntSd, wBuff, sizeof(wBuff));	
 	printf("Client: %s\n",wBuff);	
