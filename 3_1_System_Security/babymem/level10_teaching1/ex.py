@@ -1,5 +1,5 @@
 from pwn import *
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../csec")
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../../csec")
 
 context.log_level = 'debug'
 p = s.process("./babymem_level10_teaching1")
