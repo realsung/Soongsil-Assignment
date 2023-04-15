@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 void errProc(const char*);
 int main(int argc, char** argv)
@@ -27,8 +28,7 @@ int main(int argc, char** argv)
 	srcAddr.sin_family = AF_INET;
 	srcAddr.sin_port = htons(atoi(argv[1]));
 
-	res = bind(mySock,(struct sockaddr *) &srcAddr,
-			sizeof(srcAddr));	
+	res = bind(mySock,(struct sockaddr *) &srcAddr, sizeof(srcAddr));	
 	if(res == -1) errProc("bind");
 
 	if(listen(mySock, 5) < 0) errProc("listen");
@@ -40,9 +40,7 @@ int main(int argc, char** argv)
 		yourSock = accept(mySock, (struct sockaddr *)&destAddr, addrLen);
 		if(yourSock == -1) errProc("accept");
 		
-		nRecv = recvfrom(mySock, buff, BUFSIZ-1 , 0,
-			(struct sockaddr *) &destAddr,
-			&addrLen);
+		nRecv = read(yourSock, buff, BUFSIZ-1);
 		if(nRecv == -1) errProc("recvfrom");
 		if(nRecv > 0) buff[nRecv-1]='\0';
 		else buff[nRecv] = '\0';
