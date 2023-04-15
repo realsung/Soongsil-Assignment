@@ -10,7 +10,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 
-void handler(int);
+void handler(int); // 선언
 void errProc();
 void errPrint();
 
@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 	printf("Server start...\n");
-	signal(SIGCHLD, handler); // Child Process에 대한 핸들러 처리
+	signal(SIGCHLD, handler); // Child Process 종료에 대한 핸들러 처리
 
 	srvSd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(srvSd == -1 ) errProc();
@@ -83,9 +83,11 @@ int main(int argc, char** argv)
 void handler(int sig){
 	pid_t pid;
 	int status;
-	while((pid = wait(&status)) > 0){
-		printf("[*] status : %d, %d Child Process Terminated!\n", status, pid);
+	while((pid = wait(&status)) > 0){ // wait함수를 이용해서 SIGCHLD signal이 발생하는 자식 프로세스들을 wait한다. 
+		printf("[*] status : %d, %d Child Process Terminated!\n", status, pid); // SIGCHLD signal이 발생한 자식 프로세스의 status와, PID를 출력
 	}
+	// while(wait())을 안쓰고 wait()으로만 사용하면 여러 시그널이 동시에 발생하면 대기하게 됨
+	// 다만 while(wait()) 이런식으로 돌면 부모프로세스 낭비라 waitpid를 사용하는게 좋긴한데 과제 명세에 Wait()을 사용하라함
 	// while((pid = waitpid(-1, &status, WNOHANG)) > 0){ // pid가 -1이면 자식 프로세스 기다림
 	// 	printf("END\n");
 	// }
