@@ -1,8 +1,8 @@
 from pwn import *
 
 e = ELF('./babyrop_level12_teaching1')
-libc = ELF('../libc6_2.31-0ubuntu9.2_amd64.so')
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../key',port=22)
+libc = ELF('../../libc6_2.31-0ubuntu9.2_amd64.so')
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../csec',port=22,password='djaxod12')
 
 while 1:
     try:

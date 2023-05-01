@@ -3,7 +3,7 @@ from pwn import *
 s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",port=22,password="djaxod12",keyfile="../../csec")
 context.log_level = 'debug'
 context.arch = 'amd64'
-e = ELF('./babyshell_level2_testing1')
+# e = ELF('./babyshell_level2_testing1')
 p = s.process("./babyshell_level2_testing1")
 # p = process('./babyshell_level2_teaching1')
 

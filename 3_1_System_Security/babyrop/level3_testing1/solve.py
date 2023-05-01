@@ -1,7 +1,7 @@
 from pwn import *
 
 e = ELF('./babyrop_level3_testing1')
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../key',port=22)
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../csec',port=22,password='djaxod12')
 
 p = s.run('/babyrop_level3_testing1')
 

@@ -2,8 +2,8 @@ from pwn import *
 import traceback
 
 e = ELF('./babyrop_level13_teaching1')
-libc = ELF('../libc6_2.31-0ubuntu9.2_amd64.so')
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../key',port=22)
+libc = ELF('../../libc6_2.31-0ubuntu9.2_amd64.so')
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../csec',port=22,password='djaxod12')
 
 # context.log_level = 0
 

