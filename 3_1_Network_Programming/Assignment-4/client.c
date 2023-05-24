@@ -16,12 +16,7 @@
 #define GETSOCKETERRNO() (errno)
 
 int main(int argc, char *argv[]) {
-    // if (argc < 3) {
-    //     fprintf(stderr, "usage: tcp_client hostname port\n");
-    //     return 1;
-    // }
-
-    // printf("Configuring remote address...\n");
+    // 서버 연결을 위한 설정
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
@@ -32,17 +27,16 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // printf("Remote address is: ");
+    // 리모트 서버 정보 가져오기
     char address_buffer[100];
     char service_buffer[100];
     getnameinfo(peer_address->ai_addr, peer_address->ai_addrlen,
             address_buffer, sizeof(address_buffer),
             service_buffer, sizeof(service_buffer),
             NI_NUMERICHOST);
-    // printf("%s %s\n", address_buffer, service_buffer);
 
 
-    // printf("Creating socket...\n");
+    // 소켓 연결
     SOCKET socket_peer;
     socket_peer = socket(peer_address->ai_family,
             peer_address->ai_socktype, peer_address->ai_protocol);
@@ -51,8 +45,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
-    // printf("Connecting...\n");
     if (connect(socket_peer,
                 peer_address->ai_addr, peer_address->ai_addrlen)) {
         fprintf(stderr, "connect() failed. (%d)\n", GETSOCKETERRNO());
@@ -60,14 +52,11 @@ int main(int argc, char *argv[]) {
     }
     freeaddrinfo(peer_address);
 
-    // printf("Connected.\n");
-    // printf("To send data, enter text followed by enter.\n");
 
     printf("채팅서버에 연결 되었습니다.\n");
     
-
     while(1) {
-
+        // select 이용해서 서버로 데이터 송수신 받는 부분
         fd_set reads;
         FD_ZERO(&reads);
         FD_SET(socket_peer, &reads);
@@ -81,7 +70,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
             return 1;
         }
-
+        // 데이터 수신
         if (FD_ISSET(socket_peer, &reads)) {
             char read[4096];
             int bytes_received = recv(socket_peer, read, 4096, 0);
@@ -91,15 +80,13 @@ int main(int argc, char *argv[]) {
             }
             printf("%.*s", bytes_received, read);
         }
-
+        // 데이터 송신
         if(FD_ISSET(0, &reads)) {
             char read[4096];
             if (!fgets(read, 4096, stdin)) break;
-            // printf("Sending: %s", read);
             int bytes_sent = send(socket_peer, read, strlen(read), 0);
-            // printf("Sent %d bytes.\n", bytes_sent);
         }
-    } //end while(1)
+    }
 
     printf("Closing socket...\n");
     CLOSESOCKET(socket_peer);

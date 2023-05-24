@@ -14,7 +14,7 @@
 #define CLOSESOCKET(s) close(s)
 #define SOCKET int
 #define GETSOCKETERRNO() (errno)
-#define MAX_USERNAME_LENGTH 20
+#define MAX_USERNAME_LENGTH 20 // 유저 이름 길이.. 사용자1,2,,3,,4, 등등
 #define MAX_CLIENTS 10 // 만약 클라이언트 최대 할당 개수 늘릴거면 이거 늘리면됨.
 
 // Client 구조체 선언 (클라이언트 식별용)
