@@ -78,17 +78,17 @@ int main(int argc, char *argv[], char *envp[]){
                         strcpy(history[history_count].name, menu[i].name);
                         strcpy(history[history_count].status, "Failed...");
                         history_count++;
-                        flag = 1;
+                        // flag = 1;
                         break;
                     }
                     printf("Failed...\n\n");
-                    if(flag == 0){
-                        memset(history[history_count].name, '\0', sizeof(history[history_count].name));
-                        memset(history[history_count].status, '\0', sizeof(history[history_count].status));
-                        strcpy(history[history_count].name, child_data);
-                        strcpy(history[history_count].status, "Failed...");
-                        history_count++;
-                    }
+                    // if(flag == 0){
+                    //     memset(history[history_count].name, '\0', sizeof(history[history_count].name));
+                    //     memset(history[history_count].status, '\0', sizeof(history[history_count].status));
+                    //     strcpy(history[history_count].name, child_data);
+                    //     strcpy(history[history_count].status, "Failed...");
+                    //     history_count++;
+                    // }
                 }
             }
         }else if(pid == 0){ // Child
@@ -171,8 +171,8 @@ void check(Menu *m, uint8_t *str, int32_t pipenum){
             exit(8);
         }
     }
-    fprintf(fp, "Order 1 %s, %s\n", str, "Failed...");
-    fclose(fp);
-    write(pipenum, str, strlen(str));
+    // fprintf(fp, "Order 1 %s, %s\n", str, "Failed...");
+    // fclose(fp);
+    // write(pipenum, str, strlen(str));
     exit(8);
 }
