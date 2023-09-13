@@ -42,7 +42,7 @@ int main(int argc, char *argv[], char *envp[]){
 
     init(menu);
 
-    while(num--){
+    while(num){
         print_menu(menu);
         printf("Enter a menu: ");
         memset(input, '\0', sizeof(input));
@@ -69,6 +69,7 @@ int main(int argc, char *argv[], char *envp[]){
                         break;
                     }
                     printf("Successful!\n\n");
+                    num--;
                 }else if(WEXITSTATUS(status) == 8){
                     _Bool flag = 0;
                     for(uint8_t i = 0; i < MENU_SIZE; i++){
@@ -82,6 +83,7 @@ int main(int argc, char *argv[], char *envp[]){
                         break;
                     }
                     printf("Failed...\n\n");
+                    num--;
                     // if(flag == 0){
                     //     memset(history[history_count].name, '\0', sizeof(history[history_count].name));
                     //     memset(history[history_count].status, '\0', sizeof(history[history_count].status));
@@ -90,6 +92,8 @@ int main(int argc, char *argv[], char *envp[]){
                     //     history_count++;
                     // }
                 }
+                // else if(WEXITSTATUS(status) == 9){
+                // }
             }
         }else if(pid == 0){ // Child
             close(order_pipe[0]);
@@ -174,5 +178,5 @@ void check(Menu *m, uint8_t *str, int32_t pipenum){
     // fprintf(fp, "Order 1 %s, %s\n", str, "Failed...");
     // fclose(fp);
     // write(pipenum, str, strlen(str));
-    exit(8);
+    exit(9);
 }
