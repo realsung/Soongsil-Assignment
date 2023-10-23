@@ -496,6 +496,8 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+// cpu안에 각 코어마다 스케줄러가 도는데 프로세스 실행 관리(돌아가면서 실행됨)
+// 스케줄러는 프로세스를 실행시키는 것을 관리하는 것
 void
 scheduler(void)
 {
@@ -520,8 +522,8 @@ scheduler(void)
       switchuvm(p);
       p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+      swtch(&(c->scheduler), p->context); // 프로세스랑 context 교환 (user vm)
+      switchkvm(); // kernel vm 교환
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
