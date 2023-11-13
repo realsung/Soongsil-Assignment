@@ -92,6 +92,8 @@ allocproc(void)
 found:
   p->state = EMBRYO; // 태아? 처음 생성된 프로세스라는 상태
   p->pid = nextpid++; // pid 증가
+  p->priority = 5; // priority 5로 초기화
+  p->count = 0;
 
   release(&ptable.lock);
 
@@ -178,6 +180,50 @@ growproc(int n)
   return 0;
 }
 
+// priority 설정
+int
+set_proc_priority(int pid, int priority)
+{
+  struct proc *p;
+  // int old_priority = -1;
+
+  acquire(&ptable.lock); // lock
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->pid == pid) {
+      // old_priority = p->priority;
+      p->priority = priority;
+      release(&ptable.lock); // unlock
+      return 1; // priority 변경 성공
+    }
+  }
+
+  release(&ptable.lock); // unlock
+
+  return -1; // pid에 해당하는 프로세스가 없을 경우
+}
+
+// priority 반환
+int
+get_proc_priority(int pid)
+{
+  struct proc *p;
+  int priority = -1;
+
+  acquire(&ptable.lock); // lock
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if(p->pid == pid) {
+      priority = p->priority;
+      break;
+    }
+  }
+
+  release(&ptable.lock); // unlock
+
+  return priority;
+}
+
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
@@ -206,6 +252,8 @@ fork(void)
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0; // 새로운 프로세스의 리턴값은 0임. $eax 레지스터 0
+  
+  np->priority = curproc->priority; // 새로운 프로세스의 priority = 현재 프로세스의 priority
 
   // File Descriptor 복사
   for(i = 0; i < NOFILE; i++) // fd 최대 16개
@@ -496,43 +544,191 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
-// cpu안에 각 코어마다 스케줄러가 도는데 프로세스 실행 관리(돌아가면서 실행됨)
-// 스케줄러는 프로세스를 실행시키는 것을 관리하는 것
-void
-scheduler(void)
-{
+void scheduler(void) {
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
-  for(;;){
-    // Enable interrupts on this processor.
-    sti();
 
-    // Loop over process table looking for process to run.
+  for(;;) {
+    sti();
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
+    int highest_priority = 0xff;
+    struct proc *selected_proc = 0;
+
+    // 에이징 로직 추가
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      if(p->state == RUNNABLE) {
+        p->count++;
+        if (p->count >= 100) {
+          p->priority++;
+          if(p->priority == 10)
+            p->priority = 1;
+          p->count = 0;
+        }
+      }
+    }
+
+    // 우선순위 가장 높은 프로세스 선택
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
       if(p->state != RUNNABLE)
         continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+      if(p->priority < highest_priority) {
+        highest_priority = p->priority;
+        selected_proc = p;
+      }
+    }
 
-      swtch(&(c->scheduler), p->context); // 프로세스랑 context 교환 (user vm)
-      switchkvm(); // kernel vm 교환
+    if (selected_proc) {
+      selected_proc->count += 10;
+      c->proc = selected_proc;
+      switchuvm(selected_proc);
+      selected_proc->state = RUNNING;
+      
+      swtch(&(c->scheduler), selected_proc->context);
+      switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
       c->proc = 0;
     }
-    release(&ptable.lock);
 
+    release(&ptable.lock);
   }
 }
+
+
+
+
+// void
+// scheduler(void)
+// {
+//   struct proc *p; // 프로세스 구조체 포인터
+//   struct cpu *c = mycpu(); // cpu 구조체 포인터 반환
+//   c->proc = 0;
+  
+//   for(;;){
+//     // Enable interrupts on this processor.
+//     sti(); // set interrupt flag
+
+//     // Loop over process table looking for process to run.
+//     acquire(&ptable.lock); // race condition 방지 위해 lock
+
+//     // priority scheduling  
+//     /*
+//     - priority는1~10까지의 값을 가질 수 있음
+//     - 1 이 가장 높은 priority
+//     - 10 이 가장 낮은 priority 임
+//     */
+//     int min_priority = __INT_MAX__;
+//     // int max_priority = 0;
+    
+//     struct proc *min_priority_proc = 0;
+//     // struct proc *max_priority_proc = 0;
+
+//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+//       if(p->state != RUNNABLE) // 실행 가능한 프로세스 찾기
+//         continue;
+//       // 우선순위 높은 프로세스 찾기
+//       // todo : starvation 방지 필요 (count 사용)
+
+//       if(p->priority < min_priority) {
+//         min_priority = p->priority;
+//         min_priority_proc = p;
+//         min_priority_proc->count++;
+//       }
+
+//       if(min_priority_proc->count >= 0x30 && min_priority_proc->pid > 2){ // count가 0x100 이상이면 priority 1 증가
+//         if(min_priority_proc->priority >= 1){ // range check
+//           min_priority_proc->priority++; // priority 1 증가
+//           if(min_priority_proc->priority == 10){
+//             min_priority_proc->priority = 1;
+//           }
+//         }
+//         min_priority_proc->count = 0;
+//       }
+
+//       // Process is done running for now.
+//       // It should have changed its p->state before coming back.
+//       c->proc = 0;
+//     }
+
+//     if(min_priority_proc != 0) {
+//       p = min_priority_proc;
+//       c->proc = p; 
+//       switchuvm(p);
+//       p->state = RUNNING; // 프로세스 상태를 running으로 변경
+//       // p->count++;
+      
+//       swtch(&(c->scheduler), p->context); // context switch
+//       switchkvm();
+
+//       // Process is done running for now.
+//       // It should have changed its p->state before coming back.
+//       c->proc = 0;
+//     }
+//     release(&ptable.lock);
+
+//   }
+// }
+
+// void
+// scheduler(void)
+// {
+//   struct proc *p; // 프로세스 구조체 포인터
+//   struct proc *highP, *lowP, *p1; // 프로세스 구조체 포인터
+//   struct cpu *c = mycpu(); // cpu 구조체 포인터 반환
+//   c->proc = 0;
+  
+//   for(;;){
+//     // Enable interrupts on this processor.
+//     sti(); // set interrupt flag
+
+//     // Loop over process table looking for process to run.
+//     acquire(&ptable.lock); // race condition 방지 위해 lock
+//     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+//     {
+//       if (p->state != RUNNABLE)
+//         continue;
+//       highP = p;
+//       for (p1 = ptable.proc; p1 < &ptable.proc[NPROC]; p1++)
+//       {
+//         if (p1->state != RUNNABLE)
+//           continue;
+
+//         if (highP->priority < p1->priority)
+//           highP = p1;
+        
+//         if(highP->priority > p1->priority){
+//           // gg = highP->priority;
+//           lowP = highP;
+//         }
+//       }
+
+//       // 가장 낮은 priority를 가진 프로세스를 찾아서 count 증가 및 priority 증가
+//       if (lowP->count >= 0x10)
+//       { // count가 0x100 이상이면 priority 1 증가
+//         if (lowP->priority >= 1 && lowP->priority < 10) // range check
+//           lowP->priority--;                             // priority 1 증가
+//         lowP->count = 0;
+//       }
+
+//       p = highP;
+//       c->proc = p;
+//       switchuvm(p);
+//       p->state = RUNNING;
+//       p->count++;
+
+//       swtch(&(c->scheduler), p->context);
+//       switchkvm();
+
+//       // Process is done running for now.
+//       // It should have changed its p->state before coming back.
+//       c->proc = 0;
+//     }
+//     release(&ptable.lock);
+
+//   }
+// }
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
@@ -702,7 +898,8 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("pid\tpriority\tstate\tname\n");
+    cprintf("%d\t%d\t\t%s\t%s", p->pid, p->priority, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)
@@ -710,4 +907,5 @@ procdump(void)
     }
     cprintf("\n");
   }
+  cprintf("=========================================\n");
 }
