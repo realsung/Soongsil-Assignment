@@ -1,5 +1,7 @@
 #include "types.h"
 #include "user.h"
+
+
 int main(int argc, char *argv[]) {
     const char *args[] = {"echo", "NEWPROC_CALL", 0};
     int ret;

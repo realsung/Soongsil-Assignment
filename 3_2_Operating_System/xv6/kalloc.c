@@ -9,6 +9,9 @@
 #include "mmu.h"
 #include "spinlock.h"
 
+uint num_free_pages;
+uint pgrefcount[PHYSTOP >> PGSHIFT];
+
 void freerange(void *vstart, void *vend);
 extern char end[]; // first address after kernel loaded from ELF file
                    // defined by the kernel linker script in kernel.ld
@@ -23,6 +26,22 @@ struct {
   struct run *freelist;
 } kmem;
 
+uint get_refcount(uint pa) {
+  return pgrefcount[pa >> PGSHIFT];
+}
+
+void inc_refcount(uint pa) {
+  pgrefcount[pa >> PGSHIFT]++;
+}
+
+void dec_refcount(uint pa) {
+  pgrefcount[pa >> PGSHIFT]--;
+}
+
+uint GetNumFreePages() {
+  return num_free_pages;
+}
+
 // Initialization happens in two phases.
 // 1. main() calls kinit1() while still using entrypgdir to place just
 // the pages mapped by entrypgdir on free list.
@@ -33,6 +52,7 @@ kinit1(void *vstart, void *vend)
 {
   initlock(&kmem.lock, "kmem");
   kmem.use_lock = 0;
+  num_free_pages = 0;
   freerange(vstart, vend);
 }
 
@@ -48,8 +68,10 @@ freerange(void *vstart, void *vend)
 {
   char *p;
   p = (char*)PGROUNDUP((uint)vstart);
-  for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
+  for(; p + PGSIZE <= (char*)vend; p += PGSIZE){
+    pgrefcount[V2P(p) >> PGSHIFT] = 0;
     kfree(p);
+  }
 }
 //PAGEBREAK: 21
 // Free the page of physical memory pointed at by v,
@@ -64,14 +86,21 @@ kfree(char *v)
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
-  // Fill with junk to catch dangling refs.
-  memset(v, 1, PGSIZE);
-
   if(kmem.use_lock)
     acquire(&kmem.lock);
-  r = (struct run*)v;
-  r->next = kmem.freelist;
-  kmem.freelist = r;
+
+  if(get_refcount(V2P(v)) > 0) {
+    dec_refcount(V2P(v));
+  }
+
+  if(get_refcount(V2P(v)) == 0) {
+    memset(v, 1, PGSIZE);
+    num_free_pages++;
+    r = (struct run*)v;
+    r->next = kmem.freelist;
+    kmem.freelist = r;
+  }
+
   if(kmem.use_lock)
     release(&kmem.lock);
 }
@@ -86,11 +115,15 @@ kalloc(void)
 
   if(kmem.use_lock)
     acquire(&kmem.lock);
+  
+  num_free_pages--;
+
   r = kmem.freelist;
-  if(r)
+  if(r){
     kmem.freelist = r->next;
+    pgrefcount[V2P((char*)r) >> PGSHIFT] = 1;
+  }
   if(kmem.use_lock)
     release(&kmem.lock);
   return (char*)r;
 }
-

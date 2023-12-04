@@ -313,12 +313,12 @@ clearpteu(pde_t *pgdir, char *uva)
 // Given a parent process's page table, create a copy
 // of it for a child.
 pde_t*
-copyuvm(pde_t *pgdir, uint sz)
+copyuvm(pde_t *pgdir, uint sz) // pgdir: parent's page directory
 {
-  pde_t *d;
-  pte_t *pte;
+  pde_t *d; // new page directory
+  pte_t *pte; // page table entry
   uint pa, i, flags;
-  char *mem;
+  // char *mem;
 
   if((d = setupkvm()) == 0)
     return 0;
@@ -327,16 +327,35 @@ copyuvm(pde_t *pgdir, uint sz)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
       panic("copyuvm: page not present");
+    
+    /*
+    mmu.h
+    // Page table/directory entry flags.
+    #define PTE_P           0x001   // Present
+    #define PTE_W           0x002   // Writeable
+    #define PTE_U           0x004   // User
+    #define PTE_PS          0x080   // Page Size
+    */
+    *pte &= ~PTE_W; // page table entry의 PTE_W 비트를 0으로 만들어서 read-only로 만듦
+
     pa = PTE_ADDR(*pte);
-    flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto bad;
-    memmove(mem, (char*)P2V(pa), PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0) {
-      kfree(mem);
+    flags = PTE_FLAGS(*pte); // page table entry의 flag 구하기
+
+    // if((mem = kalloc()) == 0)
+      // goto bad;
+    // memmove(mem, (char*)P2V(pa), PGSIZE);
+    // if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0) {
+    //   kfree(mem);
+    //   goto bad;
+    // }
+
+    // 부모 페이지 테이블을 공유하도록 수정
+    if(mappages(d, (void*)i, PGSIZE, pa, flags) < 0) {
       goto bad;
     }
+    inc_refcount(pa);
   }
+  lcr3(V2P(pgdir)); // flush TLB
   return d;
 
 bad:
@@ -383,6 +402,49 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
     va = va0 + PGSIZE;
   }
   return 0;
+}
+
+
+/*
+pagefault 함수는 아래 기능들 수행
+- rcr2() 함수를 호출하여 page fault가 발생한 VA 읽어 들인다.
+- 해당 가상 주소의 page table entry 확인후 PA 찾는다.
+- PA 를 이용하여 해당 메모리 페이지의 reference counter 값 확인
+- reference counter 가 1보다 큰 경우 새로운 페이지를 할당 받아서 복사
+- reference counter 가 1인 경우 현재 pte 의 write 권한만 추가
+*/
+void pagefault(void){
+  uint va_fault = rcr2(); // page fault가 발생한 가상 주소를 읽어 들인다.
+  if(va_fault < 0){
+    return;
+  }
+  pte_t *pte_fault = walkpgdir(myproc()->pgdir, (void *)va_fault, 0); // 해당 가상 주소의 page table entry 확인
+  uint pa = PTE_ADDR(*pte_fault); // PA 찾기
+  if(pa == 0){
+    return;
+  }
+
+  // 해당 메모리 페이지의 reference counter 값 확인
+  int ref_count = get_refcount(pa);
+
+  // reference counter 가 1보다 큰 경우 새로운 페이지를 할당 받아서 복사
+  if(ref_count > 1){
+    char *mem = kalloc();
+    if(mem == 0){
+      panic("pagefault: kalloc failed");
+    }
+    memset(mem, 0, PGSIZE);
+    memmove(mem, (char*)P2V(pa), PGSIZE);
+    *pte_fault = V2P(mem) | PTE_FLAGS(*pte_fault);
+    // if(mappages(myproc()->pgdir, (void*)PGROUNDDOWN(va_fault), PGSIZE, V2P(mem), PTE_FLAGS(*pte_fault)) < 0){
+    //   panic("pagefault: mappages failed");
+    // }
+    dec_refcount(pa);
+  }else if(ref_count == 1){ // reference counter 가 1인 경우 현재 pte 의 write 권한만 추가
+    *pte_fault |= PTE_W;
+  }else{
+    panic("pagefault: ref_count < 1");
+  }
 }
 
 //PAGEBREAK!
